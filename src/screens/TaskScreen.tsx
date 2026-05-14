@@ -196,7 +196,7 @@ export default function TaskScreen() {
                     {dueDate ? formatDisplay(dueDate) : 'Chọn ngày...'}
                   </Text>
                   <Text style={s.dateIcon}>
-                    {dueDate ? '✕' : <Icon name="calendar" size="{20}" color="#999"/>}
+                    {dueDate ? '✕' : <Icon name="calendar" size={20} color="#999"/>}
                   </Text>
                 </TouchableOpacity>
                 {/* Clear button — chỉ hiện khi đã chọn ngày */}
