@@ -1,50 +1,90 @@
-# Welcome to your Expo app 👋
+# TaskFlow
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Ứng dụng quản lý task theo hướng offline-first cho mobile.
 
-## Get started
+- Mobile (Android/iOS): đầy đủ tính năng local SQLite + sync Supabase.
+- Web: chỉ dùng để hiển thị giao diện preview (không lưu dữ liệu, không sync).
 
-1. Install dependencies
+## Kiến trúc hiện tại
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+Mobile App                     Supabase
+────────────────────────────   ─────────────────
+SQLite local (dirty=1)    ──►  tasks table
+SQLite local (dirty=0)    ◄──  pull theo updated_at
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+- Local-first: thao tác tạo/sửa/xóa thực hiện trên SQLite trước.
+- Đồng bộ: chạy tự động mỗi 60 giây hoặc bấm Sync thủ công.
+- Conflict: ưu tiên bản ghi có updated_at mới hơn.
 
-## Learn more
+## Chạy project
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+npm install
+npx expo start
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- Android: nhấn `a` hoặc chạy `npm run android`.
+- iOS: nhấn `i` hoặc chạy `npm run ios`.
+- Web preview UI: nhấn `w` hoặc chạy `npm run web`.
 
-## Join the community
+## Cấu hình Supabase (cho mobile sync)
 
-Join our community of developers creating universal apps.
+1. Tạo project ở Supabase.
+2. Chạy file `supabase/schema.sql` trong SQL Editor.
+3. Cập nhật biến môi trường trong `.env`:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```env
+EXPO_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+EXPO_PUBLIC_SUPABASE_KEY=your_anon_or_publishable_key
+```
+
+## Cấu trúc quan trọng
+
+```
+app/
+  _layout.tsx
+  index.tsx
+
+src/
+  screens/
+    TaskScreen.tsx       # mobile: logic đầy đủ
+    TaskScreen.web.tsx   # web: UI preview only
+
+  components/
+    SyncBar.tsx
+    TaskItem.tsx
+
+  store/
+    taskStore.ts
+    kvStorage.ts
+    kvStorage.web.ts
+
+  db/
+    localDB.ts
+    localDB.web.ts
+
+  services/
+    supabase.ts
+    syncService.ts
+
+  hooks/
+    useAutoSync.ts
+
+supabase/
+  schema.sql
+```
+
+## Flow mobile
+
+1. Tạo task: ghi SQLite với `dirty=1`.
+2. Sync thủ công hoặc auto 60s: push task dirty lên Supabase.
+3. Pull dữ liệu mới từ Supabase theo `updated_at`.
+4. Cập nhật local và đánh dấu `dirty=0` khi sync thành công.
+
+## Flow web
+
+- Web render bằng file `TaskScreen.web.tsx`.
+- Chỉ hiển thị UI mẫu để demo giao diện.
+- Không gọi local DB, không gọi sync service, không ghi dữ liệu.
